@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch, MagicMock, ANY
 
 from punctfix import PunctFixer
 
@@ -72,3 +73,28 @@ class GermanPunctuationRestorationTest(unittest.TestCase):
         actual_output = self.model.punctuate(model_input)
 
         self.assertEqual(actual_output, expected_output)
+
+
+class GenerelFunctionalityTest(unittest.TestCase):
+
+    def test_if_gpu_not_available_default_cpu(self):
+        # Setup
+        self.torch_cuda_patch = patch(
+            'punctfix.inference.torch.cuda.is_available'
+        )
+        self.torch_cuda_mock: MagicMock = self.torch_cuda_patch.start()
+        self.torch_cuda_mock.return_value = False
+
+        self.token_classification_pipeline_patch = patch(
+            'punctfix.inference.TokenClassificationPipeline'
+        )
+        self.token_classification_pipeline_mock: MagicMock = self.token_classification_pipeline_patch.start()
+
+        # Test
+        self.model = PunctFixer(language="da", device="cuda")
+
+        # Verify
+        self.token_classification_pipeline_mock.assert_called_once_with(model=ANY,
+                                                                        tokenizer=ANY,
+                                                                        aggregation_strategy="first",
+                                                                        device=-1)

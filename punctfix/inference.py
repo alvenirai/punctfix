@@ -1,5 +1,6 @@
 from typing import Tuple, Dict
 
+import torch
 from transformers import TokenClassificationPipeline
 
 from punctfix.models import get_custom_model_and_tokenizer, get_english_model_and_tokenizer, \
@@ -35,7 +36,7 @@ class PunctFixer:
             self.model, self.tokenizer = get_german_model_and_tokenizer()
 
         self.model = self.model.eval()
-        self.device = -1 if device == "cpu" else 0
+        self.device = 0 if device == "cuda" and torch.cuda.is_available() else -1
 
         self.pipe = TokenClassificationPipeline(model=self.model,
                                                 tokenizer=self.tokenizer,
