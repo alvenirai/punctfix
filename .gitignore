@@ -1,2 +1,25 @@
 test_model/
 .idea/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+.eggs
+
+# Distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+**.pyo
+**.pyc

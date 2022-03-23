@@ -1,4 +1,4 @@
 .PHONY: test
 
 test:
-	python -m unittest discover -p 'test_*.py' -s './test/'
+	python -m unittest discover -p 'test_*.py' -s './tests/'
