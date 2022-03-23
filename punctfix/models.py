@@ -4,8 +4,8 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification, BertTok
 
 
 def get_english_model_and_tokenizer() -> Tuple[AutoModelForTokenClassification, AutoTokenizer]:
-    model = AutoModelForTokenClassification.from_pretrained("Alvenir/bert-punct-restoration-en", use_auth_token=True)
-    tokenizer = BertTokenizerFast.from_pretrained("Alvenir/bert-punct-restoration-en", use_auth_token=True)
+    model = AutoModelForTokenClassification.from_pretrained("Alvenir/bert-punct-restoration-en")
+    tokenizer = BertTokenizerFast.from_pretrained("Alvenir/bert-punct-restoration-en")
     return model, tokenizer
 
 
@@ -16,8 +16,8 @@ def get_danish_model_and_tokenizer() -> Tuple[AutoModelForTokenClassification, B
 
 
 def get_german_model_and_tokenizer() -> Tuple[AutoModelForTokenClassification, AutoTokenizer]:
-    tokenizer = BertTokenizerFast.from_pretrained("Alvenir/bert-punct-restoration-de", use_auth_token=True)
-    model = AutoModelForTokenClassification.from_pretrained("Alvenir/bert-punct-restoration-de", use_auth_token=True)
+    tokenizer = BertTokenizerFast.from_pretrained("Alvenir/bert-punct-restoration-de")
+    model = AutoModelForTokenClassification.from_pretrained("Alvenir/bert-punct-restoration-de")
     return model, tokenizer
 
 
