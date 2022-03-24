@@ -5,6 +5,10 @@ Works on Danish, German and English.
 
 Models hosted on huggingface! <3 
 
+## Status with python 3.8
+![example workflow](https://github.com/danspeech/punctfix/actions/workflows/run_tests.yml/badge.svg)
+![example workflow](https://github.com/danspeech/punctfix/actions/workflows/pylint.yml/badge.svg)
+
 ## Installation
 ```
 pip install punctfix
