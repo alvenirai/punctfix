@@ -3,14 +3,14 @@ name: InferenceTests
 on:
   push:
     branches:
-      - master
+    - main
     paths:
       - "punctfix/**"
-
   pull_request:
-    # run the workflow only on changes
+    branches:
+    - main
     paths:
-    - "punctfix/**"
+      - "punctfix/**"
 
 jobs:
   test:
