@@ -1,4 +1,6 @@
-from typing import Tuple, Dict
+from collections import Counter
+from dataclasses import dataclass
+from typing import Tuple, Dict, List
 
 import torch
 from transformers import TokenClassificationPipeline
@@ -7,18 +9,36 @@ from punctfix.models import get_custom_model_and_tokenizer, get_english_model_an
     get_danish_model_and_tokenizer, get_german_model_and_tokenizer
 
 
+@dataclass
+class WordPrediction:
+    word: str
+    labels: List[str]
+
+    @property
+    def label(self):
+        return Counter(self.labels).most_common(1)[0][0]
+
+
 class PunctFixer:
     """
     PunctFixer used to punctuate a given text.
     """
+
     def __init__(self, language: str = "da",
                  custom_model_path: str = None,
+                 word_overlap: int = 70,
+                 word_chunk_size: int = 100,
                  device: str = "cuda"):
         """
         :param language: Valid options are "da", "de", "en", for Danish, German and English, respectively.
         :param custom_model_path: If you have a trained model yourself. If parsed, then language param will be ignored.
-        :param device: "cpu" or "cuda" to indicate where to run inference.
+        :param word_overlap: How many words should overlap in case text is too long. Defaults to 70.
+        :param word_chunk_size: How many words should a single pass consist of. Defaults to 100.
+        :param device: "cpu" or "cuda" to indicate where to run inference. Defaults to "cuda".
         """
+
+        self.word_overlap = word_overlap
+        self.word_chunk_size = word_chunk_size
 
         self.supported_languages = {
             "de": "German",
@@ -58,39 +78,59 @@ class PunctFixer:
         :param text: A lowercase text with no punctuation.
         :return: A punctuated text.
         """
-        output = self.pipe(text)
+        words = text.split(" ")
+
+        chunks = []
+        if len(words) >= self.word_chunk_size:
+            chunks = [words[i:i + self.word_chunk_size]
+                      for i in
+                      range(0, len(words), self.word_chunk_size - self.word_overlap)]
+        else:
+            chunks.append(words)
+
+        word_prediction_list = [WordPrediction(word=word, labels=[]) for word in words]
+
+        for i, chunk_text in enumerate(chunks):
+            output = self.pipe(" ".join(chunk_text))
+            word_counter = 0
+            for entity in output:
+                label = entity["entity_group"]
+                text = entity["word"]
+                words_in_text = text.split(" ")
+
+                for j, word in enumerate(words_in_text):
+                    current_index = i * self.word_chunk_size + word_counter - (i * self.word_overlap)
+                    assert word_prediction_list[current_index].word == word, \
+                        f"Something went wrong due to handling of a long text... " \
+                        f"Tried matching the word: {word} with {word_prediction_list[current_index].word}"
+                    word_prediction_list[current_index].labels.append(label)
+                    word_counter += 1
+
+        # Combine final text
         final_text = []
         auto_upper_next = False
-        for entity in output:
-            label = entity["entity_group"]
-            text = entity["word"]
-            punctuated_text, auto_upper_next = self._combine_label_and_text(label, text, auto_upper_next)
+        for word_pred in word_prediction_list:
+            punctuated_text, auto_upper_next = self._combine_label_and_word(word_pred.label,
+                                                                            word_pred.word,
+                                                                            auto_upper_next)
             final_text.append(punctuated_text)
 
         return " ".join(final_text)
 
     @staticmethod
-    def _combine_label_and_text(label: str, text: str, auto_uppercase: bool = False) -> Tuple[str, bool]:
-        words = text.split(" ")
+    def _combine_label_and_word(label: str, word: str, auto_uppercase: bool = False) -> Tuple[str, bool]:
 
         next_auto_uppercase = False
+        if label[-1] == "U":
+            word = word.capitalize()
 
-        new_words = []
-        for word in words:
-            if label[-1] == "U":
-                punct_wrd = word.capitalize()
-            else:
-                punct_wrd = word
+        if label[0] != "O":
+            word += label[0]
 
-            if label[0] != "O":
-                punct_wrd += label[0]
-
-            new_words.append(punct_wrd)
-
-        if auto_uppercase and new_words[0]:
-            new_words[0] = new_words[0].capitalize()
+        if auto_uppercase:
+            word = word.capitalize()
 
         if label[0] != "0" and label[0] in [".", "!", "?"]:
             next_auto_uppercase = True
 
-        return " ".join(new_words), next_auto_uppercase
+        return word, next_auto_uppercase
