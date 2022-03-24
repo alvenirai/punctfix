@@ -1,0 +1,33 @@
+name: "url-integration"
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "punctfix/**"
+
+  pull_request:
+    # run the workflow only on changes
+    paths:
+    - "punctfix/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8"]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        pip install wheel
+        pip install -r requirements.txt
+    - name: Running all tests
+      run: |
+        python -m unittest ./tests/test_*.py
