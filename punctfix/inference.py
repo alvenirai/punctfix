@@ -78,7 +78,8 @@ class PunctFixer:
         self.pipe = TokenClassificationPipeline(model=self.model,
                                                 tokenizer=self.tokenizer,
                                                 aggregation_strategy="first",
-                                                device=self.device)
+                                                device=self.device,
+                                                ignore_labels=None)
 
     def get_supported_languages(self) -> Dict[str, str]:
         """

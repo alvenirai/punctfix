@@ -149,7 +149,8 @@ class GenerelFunctionalityTest(unittest.TestCase):
         self.token_classification_pipeline_mock.assert_called_once_with(model=ANY,
                                                                         tokenizer=ANY,
                                                                         aggregation_strategy="first",
-                                                                        device=-1)
+                                                                        device=-1,
+                                                                        ignore_labels=ANY)
 
     def tearDown(self) -> None:
         super().tearDown()
