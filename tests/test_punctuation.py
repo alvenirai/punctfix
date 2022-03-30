@@ -34,6 +34,19 @@ class DanishPunctuationRestorationTest(unittest.TestCase):
 
         self.assertEqual(actual_output, expected_output)
 
+    def test_sample03(self):
+        model_input = "det der sker over de tre dage fra præsident huden tav ankommer til københavn det er at der " \
+                      "sådan en bliver spillet sådan et form for tom og jerry kispus mellem københavns politi og " \
+                      "så de har danske demonstranter for tibet og fåfalungongsom meget gerne vil vise deres " \
+                      "utilfredshed med det kinesiske regime og det de opfatter som undertrykkelse af de her " \
+                      "mindretal i kine og lige nu står støttekomiteen for ti bedet bag en demonstration på" \
+                      " højbro plads i københavn lisbeth davidsen hvor mange er der kommet det er ikke " \
+                      "de store folkemasser der er mødt op her på"
+
+        actual_output = self.model.punctuate(model_input)
+
+        self.assertIsNotNone(actual_output)
+
 
 class EnglishPunctuationRestorationTest(unittest.TestCase):
 

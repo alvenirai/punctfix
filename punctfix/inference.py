@@ -79,7 +79,7 @@ class PunctFixer:
                                                 tokenizer=self.tokenizer,
                                                 aggregation_strategy="first",
                                                 device=self.device,
-                                                ignore_labels=None)
+                                                ignore_labels=[])
 
     def get_supported_languages(self) -> Dict[str, str]:
         """
