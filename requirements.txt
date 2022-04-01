@@ -1,2 +1,3 @@
+tokenizers == 0.11.6
 transformers >= 4.13
 torch

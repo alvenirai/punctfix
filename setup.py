@@ -9,7 +9,7 @@ with open('./requirements.txt', encoding="utf-8") as f:
 
 setuptools.setup(
     name="punctfix",
-    version="0.0.7",
+    version="0.0.8",
     author="Rasmus Arpe Fogh Egebæk",
     author_email="rasmus@alvenir.ai",
     description="Punctuation restoration library",
