@@ -72,6 +72,7 @@ class PunctFixer:
             raise NoLanguageOrModelSelect("You need to specify either language or custom_model_path "
                                           "when instantiating a PunctFixer.")
 
+        self.tokenizer.decoder.cleanup = False
         self.model = self.model.eval()
         self.device = 0 if device == "cuda" and torch.cuda.is_available() else -1
 
