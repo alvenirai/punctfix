@@ -9,9 +9,9 @@ with open('./requirements.txt', encoding="utf-8") as f:
 
 setuptools.setup(
     name="punctfix",
-    version="0.0.8",
-    author="Rasmus Arpe Fogh Egebæk",
-    author_email="rasmus@alvenir.ai",
+    version="0.0.9",
+    author="Martin Carsten Nielsen",
+    author_email="martin@alvenir.ai",
     description="Punctuation restoration library",
     long_description=long_description,
     long_description_content_type="text/markdown",

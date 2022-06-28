@@ -3,6 +3,24 @@ from unittest.mock import patch, MagicMock, ANY
 
 from punctfix import PunctFixer
 
+class CleanupDisableTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.model = PunctFixer(language="en")
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.model = None
+
+    def test_donot_does_not_become_dont(self):
+        model_input = "hello i am brian i do not like koalas"
+        expected_output = "Hello I am Brian. I do not like Koalas."
+
+        actual_output = self.model.punctuate(model_input)
+
+        self.assertEqual(actual_output, expected_output)
+
 
 class DanishPunctuationRestorationTest(unittest.TestCase):
 
