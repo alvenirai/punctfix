@@ -193,7 +193,7 @@ class PunctFixer:
         if label[-1] == "U":
             word = word.capitalize()
 
-        if label[0] != "O":
+        if label[0] != "0":
             word += label[0]
 
         if auto_uppercase:
