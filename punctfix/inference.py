@@ -199,7 +199,7 @@ class PunctFixer:
         if auto_uppercase:
             word = word.capitalize()
 
-        if label[0] != "0" and label[0] in [".", "!", "?"]:
+        if label[0] in {".", "!", "?"}:
             next_auto_uppercase = True
 
         return word, next_auto_uppercase
