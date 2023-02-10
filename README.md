@@ -1,9 +1,9 @@
 # Punctuation restoration 
-Adds punctuation and capitalization for a given text.
+Adds punctuation and capitalization for a given text without punctuation.
 
 Works on Danish, German and English. 
 
-Models hosted on huggingface! <3 
+Models hosted on huggingface! ❤️  🤗
 
 ## Status with python 3.8
 ![example workflow](https://github.com/danspeech/punctfix/actions/workflows/run_tests.yml/badge.svg)
@@ -19,10 +19,10 @@ Its quite simple to use!
 
 ```python
 >>> from punctfix import PunctFixer
->>> model = PunctFixer(language="da")
+>>> fixer = PunctFixer(language="da")
 
 >>> example_text = "mit navn det er rasmus og jeg kommer fra firmaet alvenir det er mig som har trænet denne lækre model"
->>> print(model.punctuate(example_text))
+>>> print(fixer.punctuate(example_text))
 'Mit navn det er Rasmus og jeg kommer fra firmaet Alvenir. Det er mig som har trænet denne lækre model.'
 
 >>> example_text = "en dag bliver vi sku glade for, at vi nu kan sætte punktummer og kommaer i en sætning det fungerer da meget godt ikke"
@@ -42,6 +42,6 @@ will be updated when we have some results on variations.
 
 ## Contribute
 If you encounter issues, feel free to open issues in the repo and then we will fix. Even better, create issue and 
-then a PR that fixes the issue! ;-) 
+then a PR that fixes the issue! ;-)
 
 Happy punctuating!

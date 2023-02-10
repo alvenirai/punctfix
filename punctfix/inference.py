@@ -1,6 +1,8 @@
 from collections import Counter
 from dataclasses import dataclass
 from typing import Tuple, Dict, List
+import warnings
+import re
 
 import torch
 from transformers import TokenClassificationPipeline
@@ -14,6 +16,11 @@ class NoLanguageOrModelSelect(Exception):
     Exception raised if you fail to specify either a language or custom model path.
     """
 
+class NonNormalizedTextWarning(RuntimeWarning):
+    """
+    Warning given when the input text does not follow the normalization used
+    during training.
+    """
 
 @dataclass
 class WordPrediction:
@@ -37,22 +44,30 @@ class PunctFixer:
     """
     PunctFixer used to punctuate a given text.
     """
+    word_normalization_pattern = re.compile(r"[\W_]+")
 
     def __init__(self, language: str = "da",
                  custom_model_path: str = None,
                  word_overlap: int = 70,
                  word_chunk_size: int = 100,
-                 device: str = "cpu"):
+                 device: str = "cpu",
+                 skip_normalization=False,
+                 suppress_normalization_warning=False,):
         """
         :param language: Valid options are "da", "de", "en", for Danish, German and English, respectively.
         :param custom_model_path: If you have a trained model yourself. If parsed, then language param will be ignored.
         :param word_overlap: How many words should overlap in case text is too long. Defaults to 70.
         :param word_chunk_size: How many words should a single pass consist of. Defaults to 100.
         :param device: "cpu" or "cuda" to indicate where to run inference. Defaults to "cpu".
+        :param skip_normalization: Don't check input text and don't normalize it.
+        :param suppress_normalization_warning: Don't warn about normalizing input text.
+            No effect if skip_normalization=False.
         """
 
         self.word_overlap = word_overlap
         self.word_chunk_size = word_chunk_size
+        self.skip_normalization = skip_normalization
+        self.suppress_normalization_warning = suppress_normalization_warning
 
         self.supported_languages = {
             "de": "German",
@@ -121,7 +136,7 @@ class PunctFixer:
 
                     # Sanity check
                     assert word_prediction_list[current_index].word == word, \
-                        f"Something went wrong due to handling of a long text... " \
+                        f"Something went wrong while matching word list ... " \
                         f"Tried matching the word: {word} with {word_prediction_list[current_index].word}"
                     word_prediction_list[current_index].labels.append(label)
                     word_counter += 1
@@ -164,7 +179,7 @@ class PunctFixer:
         :param text: A lowercase text with no punctuation.
         :return: A punctuated text.
         """
-        words = text.split(" ")
+        words = self._split_input_text(text)
 
         # If we have a long sequence of text (measured by words), we split it into chunks
         chunks = []
@@ -177,6 +192,36 @@ class PunctFixer:
         word_prediction_list = self.init_word_prediction_list(words)
         word_prediction_list = self.populate_word_prediction_with_labels(chunks, word_prediction_list)
         return self.combine_word_predictions_into_final_text(word_prediction_list)
+
+    def _split_input_text(self, text: str) -> List[str]:
+        words = text.split(" ")
+        if self.skip_normalization:
+            return words
+
+        normalized_words = []
+        to_warn = []
+        for word in words:
+            if not word:
+                to_warn.append("Additional whitespace was removed.")
+            norm_word = self.word_normalization_pattern.sub("", word)
+            if not word:
+                continue
+            if len(norm_word) < len(word):
+                to_warn.append(r"Non-word (r'\W') characters were removed.")
+            if not norm_word.islower():
+                norm_word = norm_word.lower()
+                to_warn.append("Text was lowercased.")
+            normalized_words.append(norm_word)
+
+        # Warn once for each type of normalization
+        if to_warn and not self.suppress_normalization_warning:
+            warnings.warn(
+                "The input text was modified to follow model normalization: " +
+                " ".join(sorted(set(to_warn))) +
+                " To avoid seeing this, set suppress_normalization_warning=True. "\
+                "To entirely circumvent normalization, set skip_normalization=True. ",
+                NonNormalizedTextWarning)
+        return normalized_words
 
     @staticmethod
     def _combine_label_and_word(label: str, word: str, auto_uppercase: bool = False) -> Tuple[str, bool]:

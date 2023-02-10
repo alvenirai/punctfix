@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock, ANY
 
 from punctfix import PunctFixer
+from punctfix.inference import NonNormalizedTextWarning
 
 class CleanupDisableTest(unittest.TestCase):
 
@@ -188,6 +189,49 @@ class GenerelFunctionalityTest(unittest.TestCase):
         self.torch_cuda_patch.stop()
         self.token_classification_pipeline_patch.stop()
 
+class NormalizationTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.model = PunctFixer(language="da")
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.model = None
+
+    def test_do_normalize(self):
+        self.model.suppress_normalization_warning = True
+        expected_output = ["hejsa", "mand"]
+        for model_input in ("hejsa, mand", " hejsa mand", "hejsa mand",
+                "Hejsa mand", "hejsa  mand", "  hejsa mand", "  hejsa, Mand"):
+            actual_output = self.model._split_input_text(model_input)
+            self.assertEqual(actual_output, expected_output)
+
+    def test_warnings(self):
+        self.model.suppress_normalization_warning = False
+        with self.assertWarns(NonNormalizedTextWarning):
+            model_input = "hejsa, mand"
+            self.model._split_input_text(model_input)
+
+        with self.assertWarns(NonNormalizedTextWarning):
+            model_input = "hejsa  mand"
+            self.model._split_input_text(model_input)
+
+        with self.assertWarns(NonNormalizedTextWarning):
+            model_input = "hejsa  Mand"
+            self.model._split_input_text(model_input)
+
+    def test_do_not_normalize(self):
+        model_input = "det der sker over de tre dage fra præsident huden tav ankommer til københavn det er at der " \
+                      "sådan en bliver spillet sådan et form for tom og jerry kispus mellem københavns politi og " \
+                      "så de har danske demonstranter for tibet og fåfalungongsom meget gerne vil vise deres " \
+                      "utilfredshed med det kinesiske regime og det de opfatter som undertrykkelse af de her " \
+                      "mindretal i kine og lige nu står støttekomiteen for ti bedet bag en demonstration på" \
+                      " højbro plads i københavn lisbeth davidsen hvor mange er der kommet det er ikke " \
+                      "de store folkemasser der er mødt op her på"
+        expected_output = model_input.split(" ")
+        actual_output = self.model._split_input_text(model_input)
+        self.assertEqual(actual_output, expected_output)
 
 if __name__ == '__main__':
     unittest.main()
