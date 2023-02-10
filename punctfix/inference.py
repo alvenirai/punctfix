@@ -11,6 +11,8 @@ from punctfix.models import get_custom_model_and_tokenizer, get_english_model_an
     get_danish_model_and_tokenizer, get_german_model_and_tokenizer
 
 
+WORD_NORMALIZATION_PATTERN = re.compile(r"[\W_]+")
+
 class NoLanguageOrModelSelect(Exception):
     """
     Exception raised if you fail to specify either a language or custom model path.
@@ -44,7 +46,6 @@ class PunctFixer:
     """
     PunctFixer used to punctuate a given text.
     """
-    word_normalization_pattern = re.compile(r"[\W_]+")
 
     def __init__(self, language: str = "da",
                  custom_model_path: str = None,
@@ -52,7 +53,7 @@ class PunctFixer:
                  word_chunk_size: int = 100,
                  device: str = "cpu",
                  skip_normalization=False,
-                 suppress_normalization_warning=False,):
+                 warn_on_normalization=False,):
         """
         :param language: Valid options are "da", "de", "en", for Danish, German and English, respectively.
         :param custom_model_path: If you have a trained model yourself. If parsed, then language param will be ignored.
@@ -60,14 +61,13 @@ class PunctFixer:
         :param word_chunk_size: How many words should a single pass consist of. Defaults to 100.
         :param device: "cpu" or "cuda" to indicate where to run inference. Defaults to "cpu".
         :param skip_normalization: Don't check input text and don't normalize it.
-        :param suppress_normalization_warning: Don't warn about normalizing input text.
-            No effect if skip_normalization=False.
+        :param warn_on_normalization: Warn the user if the input text was normalized.
         """
 
         self.word_overlap = word_overlap
         self.word_chunk_size = word_chunk_size
         self.skip_normalization = skip_normalization
-        self.suppress_normalization_warning = suppress_normalization_warning
+        self.warn_on_normalization = warn_on_normalization
 
         self.supported_languages = {
             "de": "German",
@@ -177,6 +177,7 @@ class PunctFixer:
         Punctuates given text.
 
         :param text: A lowercase text with no punctuation.
+            If it has punctuatation, it will be removed.
         :return: A punctuated text.
         """
         words = self._split_input_text(text)
@@ -203,7 +204,7 @@ class PunctFixer:
         for word in words:
             if not word:
                 to_warn.append("Additional whitespace was removed.")
-            norm_word = self.word_normalization_pattern.sub("", word)
+            norm_word = WORD_NORMALIZATION_PATTERN.sub("", word)
             if not word:
                 continue
             if len(norm_word) < len(word):
@@ -214,7 +215,7 @@ class PunctFixer:
             normalized_words.append(norm_word)
 
         # Warn once for each type of normalization
-        if to_warn and not self.suppress_normalization_warning:
+        if self.warn_on_normalization and to_warn:
             warnings.warn(
                 "The input text was modified to follow model normalization: " +
                 " ".join(sorted(set(to_warn))) +

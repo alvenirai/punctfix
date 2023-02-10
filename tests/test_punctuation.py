@@ -200,7 +200,7 @@ class NormalizationTest(unittest.TestCase):
         self.model = None
 
     def test_do_normalize(self):
-        self.model.suppress_normalization_warning = True
+        self.model.warn_on_normalization = False
         expected_output = ["hejsa", "mand"]
         for model_input in ("hejsa, mand", " hejsa mand", "hejsa mand",
                 "Hejsa mand", "hejsa  mand", "  hejsa mand", "  hejsa, Mand"):
@@ -208,7 +208,7 @@ class NormalizationTest(unittest.TestCase):
             self.assertEqual(actual_output, expected_output)
 
     def test_warnings(self):
-        self.model.suppress_normalization_warning = False
+        self.model.warn_on_normalization = True
         with self.assertWarns(NonNormalizedTextWarning):
             model_input = "hejsa, mand"
             self.model._split_input_text(model_input)
