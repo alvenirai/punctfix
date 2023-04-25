@@ -1,6 +1,6 @@
 from collections import Counter
 from dataclasses import dataclass
-from typing import Tuple, Dict, List
+from typing import Tuple, Dict, List, Union, Optional
 import warnings
 import re
 
@@ -49,6 +49,7 @@ class PunctFixer:
 
     def __init__(self, language: str = "da",
                  custom_model_path: str = None,
+                 use_auth_token: Optional[Union[bool, str]] = None,
                  word_overlap: int = 70,
                  word_chunk_size: int = 100,
                  device: str = "cpu",
@@ -76,7 +77,7 @@ class PunctFixer:
         }
 
         if custom_model_path:
-            self.model, self.tokenizer = get_custom_model_and_tokenizer(custom_model_path)
+            self.model, self.tokenizer = get_custom_model_and_tokenizer(custom_model_path, use_auth_token)
         elif language == "en":
             self.model, self.tokenizer = get_english_model_and_tokenizer()
         elif language == "da":
