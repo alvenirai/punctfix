@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional, Union
 
 from transformers import AutoTokenizer, AutoModelForTokenClassification, BertTokenizerFast
 
@@ -36,11 +36,11 @@ def get_german_model_and_tokenizer() -> Tuple[AutoModelForTokenClassification, A
     return model, tokenizer
 
 
-def get_custom_model_and_tokenizer(model_path: str) -> Tuple[AutoModelForTokenClassification, AutoTokenizer]:
+def get_custom_model_and_tokenizer(model_path: str, use_auth_token: Optional[Union[bool, str]] = None) -> Tuple[AutoModelForTokenClassification, AutoTokenizer]:
     """
     Gets local transformer model and tokenizer
     :return: Tuple with (model, tokenizer)
     """
-    model = AutoModelForTokenClassification.from_pretrained(model_path)
-    tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
+    model = AutoModelForTokenClassification.from_pretrained(model_path, use_auth_token=use_auth_token)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True, use_auth_token=use_auth_token)
     return model, tokenizer
