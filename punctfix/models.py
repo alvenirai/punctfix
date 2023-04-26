@@ -36,7 +36,10 @@ def get_german_model_and_tokenizer() -> Tuple[AutoModelForTokenClassification, A
     return model, tokenizer
 
 
-def get_custom_model_and_tokenizer(model_path: str, use_auth_token: Optional[Union[bool, str]] = None) -> Tuple[AutoModelForTokenClassification, AutoTokenizer]:
+def get_custom_model_and_tokenizer(
+        model_path: str,
+        use_auth_token: Optional[Union[bool, str]] = None
+    ) -> Tuple[AutoModelForTokenClassification, AutoTokenizer]:
     """
     Gets local transformer model and tokenizer
     :return: Tuple with (model, tokenizer)
