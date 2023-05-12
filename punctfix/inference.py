@@ -210,6 +210,9 @@ class PunctFixer:
                 continue
             if len(norm_word) < len(word):
                 to_warn.append(r"Non-word (r'\W') characters were removed.")
+            # We might have removed the entire word
+            if not norm_word:
+                continue
             if not norm_word.islower():
                 norm_word = norm_word.lower()
                 to_warn.append("Text was lowercased.")

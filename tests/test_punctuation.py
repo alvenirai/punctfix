@@ -203,7 +203,8 @@ class NormalizationTest(unittest.TestCase):
         self.model.warn_on_normalization = False
         expected_output = ["hejsa", "mand"]
         for model_input in ("hejsa, mand", " hejsa mand", "hejsa mand",
-                "Hejsa mand", "hejsa  mand", "  hejsa mand", "  hejsa, Mand"):
+                "Hejsa mand", "hejsa  mand", "  hejsa mand", "  hejsa, Mand",
+                "hejsa % mand ! % "):
             actual_output = self.model._split_input_text(model_input)
             self.assertEqual(actual_output, expected_output)
 
