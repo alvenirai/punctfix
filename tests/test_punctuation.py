@@ -184,6 +184,7 @@ class GenerelFunctionalityTest(unittest.TestCase):
                                                                         device=-1,
                                                                         ignore_labels=ANY)
 
+
     def tearDown(self) -> None:
         super().tearDown()
         self.torch_cuda_patch.stop()
@@ -233,6 +234,18 @@ class NormalizationTest(unittest.TestCase):
         expected_output = model_input.split(" ")
         actual_output = self.model._split_input_text(model_input)
         self.assertEqual(actual_output, expected_output)
+
+class InputParameterTest(unittest.TestCase):
+    def test_setting_batch_size(self):
+        model_input = "mit navn det er rasmus og jeg kommer fra firmaet alvenir " \
+                      "det er mig som har trænet denne lækre model"
+        expected_output = "Mit navn det er Rasmus og jeg kommer fra firmaet Alvenir. " \
+                          "Det er mig som har trænet denne lækre model."
+        for batch_size in 1, 27, 99:
+            model = PunctFixer(language="da", batch_size=batch_size)
+            actual_output = model.punctuate(model_input)
+            self.assertEqual(actual_output, expected_output)
+
 
 if __name__ == '__main__':
     unittest.main()

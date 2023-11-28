@@ -52,23 +52,27 @@ class PunctFixer:
                  use_auth_token: Optional[Union[bool, str]] = None,
                  word_overlap: int = 70,
                  word_chunk_size: int = 100,
-                 device: str = "cpu",
+                 device: Union[str, torch.device] = torch.device("cpu"),
                  skip_normalization=False,
-                 warn_on_normalization=False,):
+                 warn_on_normalization=False,
+                 batch_size: int = 1
+                 ):
         """
         :param language: Valid options are "da", "de", "en", for Danish, German and English, respectively.
         :param custom_model_path: If you have a trained model yourself. If parsed, then language param will be ignored.
         :param word_overlap: How many words should overlap in case text is too long. Defaults to 70.
         :param word_chunk_size: How many words should a single pass consist of. Defaults to 100.
-        :param device: "cpu" or "cuda" to indicate where to run inference. Defaults to "cpu".
+        :param device: A torch.device on which to perform inference. The strings "cpu" or "cuda" can also be given.
         :param skip_normalization: Don't check input text and don't normalize it.
         :param warn_on_normalization: Warn the user if the input text was normalized.
+        :param batch_size: Number of text chunks to pass through token classification pipeline.
         """
 
         self.word_overlap = word_overlap
         self.word_chunk_size = word_chunk_size
         self.skip_normalization = skip_normalization
         self.warn_on_normalization = warn_on_normalization
+        self.batch_size = batch_size
 
         self.supported_languages = {
             "de": "German",
@@ -90,7 +94,11 @@ class PunctFixer:
 
         self.tokenizer.decoder.cleanup = False
         self.model = self.model.eval()
-        self.device = 0 if device == "cuda" and torch.cuda.is_available() else -1
+        if isinstance(device, str): # Backwards compatability
+            self.device = 0 if device == "cuda" and torch.cuda.is_available() else -1
+        else:
+            self.device = device
+
 
         self.pipe = TokenClassificationPipeline(model=self.model,
                                                 tokenizer=self.tokenizer,
@@ -124,8 +132,8 @@ class PunctFixer:
         :param word_prediction_list: A list containing word predictions i.e. word and labels.
         :return: Word predictions list with all label predictions for each word
         """
-        for i, chunk_text in enumerate(chunks):
-            output = self.pipe(" ".join(chunk_text))
+        outputs = self.pipe([" ".join(chunk_text) for chunk_text in chunks], batch_size=self.batch_size)
+        for i, output in enumerate(outputs):
             word_counter = 0
             for entity in output:
                 label = entity["entity_group"]
