@@ -189,7 +189,7 @@ class PunctFixer:
             If it has punctuatation, it will be removed.
         :return: A punctuated text.
         """
-        words = self._split_input_text(text)
+        words = self.split_input_text(text)
 
         # If we have a long sequence of text (measured by words), we split it into chunks
         chunks = []
@@ -203,7 +203,12 @@ class PunctFixer:
         word_prediction_list = self.populate_word_prediction_with_labels(chunks, word_prediction_list)
         return self.combine_word_predictions_into_final_text(word_prediction_list)
 
-    def _split_input_text(self, text: str) -> List[str]:
+    def split_input_text(self, text: str) -> List[str]:
+        """
+        Splits given text into words using whitespace tokenization, also performing normalization
+        :param text: A lowercase text with no punctuation (otherwise normalized)
+        :return: A list of the words in that text, splitted and normalized.
+        """
         words = text.split(" ")
         if self.skip_normalization:
             return words
