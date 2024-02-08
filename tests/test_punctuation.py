@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock, ANY
 
 from punctfix import PunctFixer
 from punctfix.inference import NonNormalizedTextWarning
+from punctfix.streaming import PunctFixStreamer
 
 class CleanupDisableTest(unittest.TestCase):
 
@@ -184,6 +185,7 @@ class GenerelFunctionalityTest(unittest.TestCase):
                                                                         device=-1,
                                                                         ignore_labels=ANY)
 
+
     def tearDown(self) -> None:
         super().tearDown()
         self.torch_cuda_patch.stop()
@@ -205,22 +207,22 @@ class NormalizationTest(unittest.TestCase):
         for model_input in ("hejsa, mand", " hejsa mand", "hejsa mand",
                 "Hejsa mand", "hejsa  mand", "  hejsa mand", "  hejsa, Mand",
                 "hejsa % mand ! % "):
-            actual_output = self.model._split_input_text(model_input)
+            actual_output = self.model.split_input_text(model_input)
             self.assertEqual(actual_output, expected_output)
 
     def test_warnings(self):
         self.model.warn_on_normalization = True
         with self.assertWarns(NonNormalizedTextWarning):
             model_input = "hejsa, mand"
-            self.model._split_input_text(model_input)
+            self.model.split_input_text(model_input)
 
         with self.assertWarns(NonNormalizedTextWarning):
             model_input = "hejsa  mand"
-            self.model._split_input_text(model_input)
+            self.model.split_input_text(model_input)
 
         with self.assertWarns(NonNormalizedTextWarning):
             model_input = "hejsa  Mand"
-            self.model._split_input_text(model_input)
+            self.model.split_input_text(model_input)
 
     def test_do_not_normalize(self):
         model_input = "det der sker over de tre dage fra præsident huden tav ankommer til københavn det er at der " \
@@ -231,8 +233,113 @@ class NormalizationTest(unittest.TestCase):
                       " højbro plads i københavn lisbeth davidsen hvor mange er der kommet det er ikke " \
                       "de store folkemasser der er mødt op her på"
         expected_output = model_input.split(" ")
-        actual_output = self.model._split_input_text(model_input)
+        actual_output = self.model.split_input_text(model_input)
         self.assertEqual(actual_output, expected_output)
+
+class InputParameterTest(unittest.TestCase):
+    def test_setting_batch_size(self):
+        model_input = "mit navn det er rasmus og jeg kommer fra firmaet alvenir " \
+                      "det er mig som har trænet denne lækre model"
+        expected_output = "Mit navn det er Rasmus og jeg kommer fra firmaet Alvenir. " \
+                          "Det er mig som har trænet denne lækre model."
+        for batch_size in 1, 27, 99:
+            model = PunctFixer(language="da", batch_size=batch_size)
+            actual_output = model.punctuate(model_input)
+            self.assertEqual(actual_output, expected_output)
+
+class PunctFixStreamerTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.streamer = PunctFixStreamer(PunctFixer(language="da"))
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        del self.streamer
+
+    def test_sample01(self):
+        model_inputs = "mit navn det er rasmus", "og jeg kommer", "fra firmaet alvenir",\
+                        "det er mig", "som har trænet", "denne", "lækre model"
+        expected_output = "Mit navn det er Rasmus og jeg kommer fra firmaet Alvenir. " \
+                          "Det er mig som har trænet denne lækre model."
+
+        for input_ in model_inputs:
+            self.streamer(input_)
+        actual_output = self.streamer.finalize()
+        self.assertEqual(actual_output, expected_output)
+
+    def test_sample02(self):
+        model_inputs = "en dag bliver vi sku glade", "for", "at vi nu kan", "sætte punktummer ",\
+                "og kommaer", "i", "en", "sætning det fungerer da meget", "godt ikke"
+        expected_output = "En dag bliver vi sku glade for, at vi nu kan sætte punktummer " \
+                          "og kommaer i en sætning. Det fungerer da meget godt, ikke?"
+        for input_ in model_inputs:
+            self.streamer(input_)
+        actual_output = self.streamer.finalize()
+        self.assertEqual(actual_output, expected_output)
+
+    def test_sample03(self):
+        # We want it super loooong
+        model_input = "det der sker over de tre dage fra præsident huden tav ankommer til københavn det er at der " \
+                      "sådan en bliver spillet sådan et form for tom og jerry kispus mellem københavns politi og " \
+                      "så de har danske demonstranter for tibet og fåfalungongsom meget gerne vil vise deres " \
+                      "utilfredshed med det kinesiske regime og det de opfatter som undertrykkelse af de her " \
+                      "mindretal i kine og lige nu står støttekomiteen for ti bedet bag en demonstration på" \
+                      " højbro plads i københavn lisbeth davidsen hvor mange er der kommet det er ikke " \
+                      "de store folkemasser der er mødt op her på byggepladsen her er ekstra ord " * 2
+        expected_output = self.streamer.punct_fixer.punctuate(model_input)
+        for w in model_input.split():
+            partial_output = self.streamer(w)
+            if partial_output is not None:
+                self.assertIn(partial_output, expected_output)
+        actual_output = self.streamer.finalize()
+        self.assertEqual(actual_output, expected_output)
+
+    def test_repeated_same_input(self):
+        self.streamer("test")
+        self.streamer("test")
+        output = self.streamer.finalize()
+        expected_output = "Test test."
+        self.assertEqual(output, expected_output)
+
+    def test_empty_string_input(self):
+        self.streamer("")
+        output = self.streamer.finalize()
+        self.assertEqual(output, "")
+
+    ### The below tests are isolated method unit tests
+    def test_get_result_method(self):
+        self.streamer("test test")
+        # Call get_result at an intermediate state
+        output = self.streamer.get_result()
+        self.assertEqual(output, "")
+        # Call get_result at a final state but without processing buffer
+        output = self.streamer.get_result(is_finalized=True)
+        self.assertEqual(output, "")
+        # Call get_result at a final state where there is enough data to make the buffer processed
+        self.streamer(" ".join(["test"]*98)) # gives a total of 100=chunk size
+        output = self.streamer.get_result(is_finalized= True)
+        self.assertEqual(output, ("Test "*100)[:-1])
+
+    def test_finalize_method(self):
+        self.streamer("finalizing test")
+        output = self.streamer.finalize()
+        expected_output = "Finalizing Test."
+        self.assertEqual(output, expected_output)
+
+    def test_call_method(self):
+        self.streamer("test input")
+        self.assertEqual(len(self.streamer.buffer), 2)
+        self.assertEqual(len(self.streamer.chunked_words), 0)
+        self.streamer("test " * 100)
+        self.assertEqual(len(self.streamer.buffer), 72) # Overlap size +2
+        self.assertEqual(len(self.streamer.chunked_words), 100) # Chunk size
+
+    def test_clear_method(self):
+        self.streamer("clearing test")
+        self.streamer.clear()
+        self.assertEqual(self.streamer.buffer, [])
+        self.assertEqual(self.streamer.chunked_words, [])
 
 if __name__ == '__main__':
     unittest.main()
